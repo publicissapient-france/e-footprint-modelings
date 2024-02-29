@@ -6,3 +6,6 @@ This repository is a collection of e-footprint use cases. e-footprint is a digit
 
 ### Modeling of the impact of large language models
 See [llm_modelings/bloom.py](llm_modelings/bloom.py).
+
+### Modeling of the impact of a mobile payment service: Paylib
+See [paylib_efootprint/paylib_per_million_users.py](paylib_efootprint/paylib_per_million_users.py).

@@ -11,3 +11,4 @@ __pypackages__/
 env/
 venv/
 lib
+.DS_Store
