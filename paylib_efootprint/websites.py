@@ -1,0 +1,53 @@
+from efootprint.constants.countries import Countries
+from efootprint.abstract_modeling_classes.source_objects import SourceValue, Sources, SourceObject
+from efootprint.core.hardware.device_population import DevicePopulation
+from efootprint.core.hardware.network import Network
+from efootprint.core.usage.usage_pattern import UsagePattern
+from efootprint.core.usage.user_journey import UserJourney, UserJourneyStep
+from efootprint.core.usage.job import Job
+from efootprint.builders.hardware.devices_defaults import default_smartphone
+from efootprint.constants.units import u
+
+from on_premise_infrastructure import site_recup, site_vitrine
+
+
+POPULATION = DevicePopulation("one million users", SourceValue(1e6 * u.user), Countries.FRANCE(), [default_smartphone()])
+
+# In reality 98% smartphones
+uj_recup = UserJourney("Visite site de récupération de fonds",
+                       uj_steps=[
+                           UserJourneyStep(
+                               "Parcours site récup",
+                               user_time_spent=SourceValue(2 * u.min / u.uj, Sources.USER_DATA),
+                               jobs=[Job("requête site récup", site_recup,
+                                         SourceValue(100 * u.kB / u.uj, Sources.USER_DATA),
+                                         SourceValue(1.1 * u.MB / u.uj, Sources.USER_DATA),
+                                         cpu_needed=SourceValue(1 * u.core / u.uj, Sources.HYPOTHESIS),
+                                         ram_needed=SourceValue(50 * u.MB / u.uj, Sources.HYPOTHESIS),
+                                         request_duration=SourceValue(1.5 * u.s, Sources.HYPOTHESIS)
+                                         )])])
+
+network = Network("4G network", SourceValue(0.12 * u("kWh/GB"), Sources.TRAFICOM_STUDY))
+
+up_site_recup = UsagePattern(
+    "Site de récupération de fonds", uj_recup, POPULATION,
+    network, SourceValue(1 * u.user_journey / (u.user * u.year), Sources.USER_DATA),
+    SourceObject([[9, 17]]))
+
+uj_vitrine = UserJourney("Visite site vitrine Paylib",
+                         uj_steps=[
+                             UserJourneyStep(
+                                 "Parcours site vitrine", user_time_spent=SourceValue(1.33 * u.min / u.uj, Sources.USER_DATA),
+                                 jobs=[
+                                     Job("requête site vitrine", site_vitrine,
+                                         SourceValue(100 * u.kB / u.uj, Sources.USER_DATA),
+                                         SourceValue(7 * u.MB / u.uj, Sources.USER_DATA),
+                                         cpu_needed=SourceValue(1 * u.core / u.uj, Sources.HYPOTHESIS),
+                                         ram_needed=SourceValue(50 * u.MB / u.uj, Sources.HYPOTHESIS),
+                                         request_duration=SourceValue(2.5 * u.s, Sources.HYPOTHESIS))])])
+
+# In reality 0.87% smartphones
+up_site_vitrine = UsagePattern(
+    "Usage site vitrine", uj_vitrine, POPULATION,
+    network, SourceValue(1 * u.user_journey / (u.user * u.year), Sources.USER_DATA),
+    SourceObject([[9, 17]]))
