@@ -14,3 +14,4 @@ lib
 .DS_Store
 .flake8
 pylintrc
+*.json

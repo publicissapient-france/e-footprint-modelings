@@ -1,4 +1,7 @@
+import os.path
+
 from efootprint.abstract_modeling_classes.source_objects import SourceValue, Sources, SourceObject, Source
+from efootprint.api_utils.system_to_json import system_to_json
 from efootprint.core.usage.user_journey import UserJourney, UserJourneyStep
 from efootprint.core.usage.job import Job
 from efootprint.core.hardware.servers.autoscaling import Autoscaling
@@ -133,3 +136,7 @@ print(f"Total system carbon footprint is {system.total_footprint.value}")
 
 system.plot_footprints_by_category_and_object()
 system.object_relationship_graph_to_file("Bloom object relationship graph.html")
+
+root_dir = os.path.dirname(os.path.abspath(__file__))
+
+system_to_json(system, save_calculated_attributes=False, output_filepath=os.path.join(root_dir, "bloom_modeling.json"))
