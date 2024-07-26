@@ -1,1 +1,1 @@
-efootprint==1.2.1
+efootprint==2.1.6
