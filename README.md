@@ -14,5 +14,7 @@ See [paylib_efootprint](paylib_efootprint).
 Jupytext automatically translates notebooks into .py files for easier versioning.
 
 ```bash
+# if not done, install jupyter kernel
+ipython kernel install --user --name=e-footprint-modelings
 bash jupyter.sh
 ```
