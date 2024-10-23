@@ -9,3 +9,10 @@ See [llm_modelings](llm_modelings).
 
 ### Modeling of the impact of a mobile payment service: Paylib
 See [paylib_efootprint](paylib_efootprint).
+
+# Launch Jupyter Notebook with jupytext
+Jupytext automatically translates notebooks into .py files for easier versioning.
+
+```bash
+bash jupyter.sh
+```

@@ -1,1 +1,4 @@
 efootprint==2.1.6
+jupyter
+jupytext
+ipykernel
