@@ -2,6 +2,7 @@ import os
 import sys
 
 from efootprint.core.hardware.servers.autoscaling import Autoscaling
+from efootprint.core.usage.job import Job
 
 from llm_modelings.bloom_efootprint import storage
 
@@ -29,40 +30,62 @@ hp_ssd_carbon_footprint = SourceValue(160 * u.kg, Sources.STORAGE_EMBODIED_CARBO
 #---------------------------------------------------------------------------
 #SERVER
 #---------------------------------------------------------------------------
-hp_server_lg_carbon_footprint = SourceValue(1000 * u.kg, Sources.HYPOTHESIS)
-hp_server_lg_power = SourceValue(300 * u.W, Sources.HYPOTHESIS)
-hp_server_lg_idle_power = SourceValue(50 * u.W, Sources.HYPOTHESIS)
-hp_server_lg_ram = SourceValue(256 * u.Go, Sources.USER_INPUT)
-hp_server_lg_cpu = SourceValue(64 * u.core, Sources.USER_INPUT)
-hp_server_sm_carbon_footprint = SourceValue(200 * u.kg, Sources.HYPOTHESIS)
-hp_server_sm_power = SourceValue(150 * u.W, Sources.HYPOTHESIS)
-hp_server_sm_idle_power = SourceValue(20 * u.W, Sources.HYPOTHESIS)
-hp_server_sm_ram = SourceValue(32 * u.Go, Sources.USER_INPUT)
-hp_server_sm_cpu = SourceValue(8 * u.core, Sources.USER_INPUT)
-instance_configuration = {
+#Definition of two instance configurations, one for large instances and one for small instances (for storage specifically)
+#Use of an instance type variable to define easily the instance type
+hp_instance_configuration = {
     "lg": {
-        "carbon_footprint": hp_server_lg_carbon_footprint,
-        "power": hp_server_lg_power,
-        "idle_power": hp_server_lg_idle_power,
-        "ram": hp_server_lg_ram,
-        "cpu": hp_server_lg_cpu
+        "carbon_footprint": SourceValue(1000 * u.kg, Sources.HYPOTHESIS),
+        "power": SourceValue(300 * u.W, Sources.HYPOTHESIS),
+        "idle_power": SourceValue(50 * u.W, Sources.HYPOTHESIS),
+        "ram": SourceValue(256 * u.Go, Sources.USER_INPUT),
+        "cpu": SourceValue(64 * u.core, Sources.USER_INPUT)
     },
     "sm": {
-        "carbon_footprint": hp_server_sm_carbon_footprint,
-        "power": hp_server_sm_power,
-        "idle_power": hp_server_sm_idle_power,
-        "ram": hp_server_sm_ram,
-        "cpu": hp_server_sm_cpu
+        "carbon_footprint": SourceValue(200 * u.kg, Sources.HYPOTHESIS),
+        "power": SourceValue(150 * u.W, Sources.HYPOTHESIS),
+        "idle_power": SourceValue(20 * u.W, Sources.HYPOTHESIS),
+        "ram": SourceValue(32 * u.Go, Sources.USER_INPUT),
+        "cpu": SourceValue(8 * u.core, Sources.USER_INPUT)
     }
 }
 #---------------------------------------------------------------------------
 #JOB
 #---------------------------------------------------------------------------
-hp_data_upload = SourceValue(10 * u.ko, Sources.HYPOTHESIS)
-hp_data_download = SourceValue(500 * u.ko, Sources.HYPOTHESIS)
-hp_request_duration = SourceValue(1 * u.s, Sources.HYPOTHESIS)
-hp_server_ram_needed = SourceValue(1, Sources.HYPOTHESIS)
-hp_step_duration = SourceValue(10 * u.s, Sources.HYPOTHESIS)
+hp_job_type={
+    "default": {
+        "data_upload": SourceValue(10 * u.ko, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.ko, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
+        "server_ram_needed": SourceValue(1, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(1, Sources.HYPOTHESIS)
+    },
+    "base_calcul_a": {
+        "data_upload": SourceValue(10 * u.ko, Sources.HYPOTHESIS),
+        "data_download": SourceValue(2 * u.mo, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "request_duration": SourceValue(3 * u.s, Sources.HYPOTHESIS),
+        "server_ram_needed": SourceValue(2, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(2, Sources.HYPOTHESIS)
+    },
+    "base_calcul_b": {
+        "data_upload": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.mo, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
+        "server_ram_needed": SourceValue(2, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(2, Sources.HYPOTHESIS)
+    },
+    "jenkins": {
+        "data_upload": SourceValue(100 * u.ko, Sources.HYPOTHESIS),
+        "data_download": SourceValue(100 * u.ko, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
+        "server_ram_needed": SourceValue(1, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(1, Sources.HYPOTHESIS)
+    }
+}
+
 
 #Util method to optimize the creation of storage and avoid multiple call of init Storage in the main script
 def create_storage(name):
@@ -80,27 +103,74 @@ def create_storage(name):
         average_carbon_intensity=SourceValue(0.1 * u.kgCO2eq / u.kWh, Sources.HYPOTHESIS),
     )
 
-def create_server(name, instance_type, storage):
+def create_server(name, instance_type, serv_storage):
     return Autoscaling(
         name,
-        carbon_footprint_fabrication=instance_configuration[instance_type]["carbon_footprint"],
-        power=instance_configuration[instance_type]["power"],
+        carbon_footprint_fabrication=hp_instance_configuration[instance_type]["carbon_footprint"],
+        power=hp_instance_configuration[instance_type]["power"],
         lifespan=SourceValue(6 * u.year, Sources.HYPOTHESIS),
-        idle_power=instance_configuration[instance_type]["idle_power"],
-        ram=instance_configuration[instance_type]["ram"],
-        cpu_cores=instance_configuration[instance_type]["cpu"],
+        idle_power=hp_instance_configuration[instance_type]["idle_power"],
+        ram=hp_instance_configuration[instance_type]["ram"],
+        cpu_cores=hp_instance_configuration[instance_type]["cpu"],
         power_usage_effectiveness=SourceValue(1.2 * u.dimensionless, Sources.HYPOTHESIS),
         average_carbon_intensity=SourceValue(0.1 * u.kgCO2eq / u.kWh, Sources.HYPOTHESIS),
         server_utilization_rate=SourceValue(0.5 * u.dimensionless, Sources.HYPOTHESIS),
         base_ram_consumption=SourceValue(0.5 * u.Go, Sources.HYPOTHESIS),
         base_cpu_consumption=SourceValue(0.5 * u.core, Sources.HYPOTHESIS),
-        storage=storage
+        storage=serv_storage
+    )
+
+def create_job(name, data_upload, data_download, data_stored, request_duration, ram_needed, cpu_needed, server,
+        nb_result_step_trial=None):
+    if nb_result_step_trial is not None:
+        data_upload = data_upload * nb_result_step_trial
+        data_download = data_download * nb_result_step_trial
+        data_stored = data_stored * nb_result_step_trial
+        request_duration = request_duration * nb_result_step_trial
+    else :
+        data_upload = SourceValue(data_upload, Sources.HYPOTHESIS)
+        data_download = SourceValue(data_download, Sources.HYPOTHESIS)
+        data_stored = SourceValue(data_stored, Sources.HYPOTHESIS)
+        request_duration = SourceValue(request_duration, Sources.HYPOTHESIS)
+    return Job(
+        name=name,
+        data_upload=data_upload,
+        data_download=data_download,
+        data_stored=data_stored,
+        request_duration=request_duration,
+        ram_needed=SourceValue(ram_needed, Sources.HYPOTHESIS),
+        cpu_needed=SourceValue(cpu_needed, Sources.HYPOTHESIS),
+        server=server
+    )
+
+def create_job_with_template_dict(name, job_template, server, nb_result_step_trial=None):
+    data_upload = hp_job_type[job_template]["data_upload"]
+    data_download = hp_job_type[job_template]["data_download"]
+    data_stored = hp_job_type[job_template]["data_stored"]
+    request_duration = hp_job_type[job_template]["request_duration"]
+    if nb_result_step_trial is not None:
+        data_upload = data_upload * nb_result_step_trial
+        data_download = data_download * nb_result_step_trial
+        data_stored = data_stored * nb_result_step_trial
+        request_duration = request_duration * nb_result_step_trial
+    return Job(
+        name=name,
+        data_upload=data_upload,
+        data_download=data_download,
+        data_stored=data_stored,
+        request_duration=request_duration,
+        ram_needed=hp_job_type[job_template]["server_ram_needed"],
+        cpu_needed=hp_job_type[job_template]["cpu_needed"],
+        server=server
     )
 
 
-
-
-
+def create_user_journey_step(name, user_time_spent, job):
+    return UserJourneyStep(
+        name=name,
+        job=job,
+        user_time_spent=SourceValue(user_time_spent, Sources.HYPOTHESIS),
+    )
 
 
 
@@ -115,7 +185,6 @@ def plot_from_system(emissions_dict__old, emissions_dict__new, title, filepath, 
 
 def create_usage_pattern(journey_name, steps, device_population, network, uj_freq, time_interval):
     uj_steps = []
-
     for step in steps:
         step_name = step['step_name']
         request_service = step['request_service']
