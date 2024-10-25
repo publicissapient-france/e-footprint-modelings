@@ -50,33 +50,33 @@ hp_instance_configuration = {
 #---------------------------------------------------------------------------
 hp_job_type={
     "default": {
-        "data_upload": SourceValue(10 * u.kb, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.kb, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(10 * u.kB, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.kB, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
         "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
         "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)
     },
     "base_calcul_a": {
-        "data_upload": SourceValue(10 * u.kb, Sources.HYPOTHESIS),
-        "data_download": SourceValue(2 * u.mb, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(10 * u.kB, Sources.HYPOTHESIS),
+        "data_download": SourceValue(2 * u.MB, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
         "request_duration": SourceValue(3 * u.s, Sources.HYPOTHESIS),
         "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
         "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
     },
     "base_calcul_b": {
-        "data_upload": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.mb, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.MB, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
         "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
         "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
     },
     "jenkins": {
-        "data_upload": SourceValue(100 * u.kb, Sources.HYPOTHESIS),
-        "data_download": SourceValue(100 * u.kb, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(100 * u.kB, Sources.HYPOTHESIS),
+        "data_download": SourceValue(100 * u.kB, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
         "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
         "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)

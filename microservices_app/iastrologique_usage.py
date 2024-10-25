@@ -50,7 +50,7 @@ mongodb_data_fetch_job = create_job_with_template_dict(
     "MongoDB Data Fetch", 'default', mongodb_server)
 form_filling_job = create_job(
     "Form Filling",
-    50*u.ko, 2*u.Mo, 0*u.ko, 3*u.s, 2*u.gb, 1*u.core, iastrologique_app_server)
+    50*u.kB, 2*u.MB, 0*u.kB, 3*u.s, 2*u.GB, 1*u.core, iastrologique_app_server)
 
 five_modeling_result_jobs = create_job_with_template_dict(
     '5 modeling result', 'base_calcul_a', iastrologique_app_server, nb_result_steps_trials)
@@ -60,19 +60,19 @@ five_ter_result_postgres_calls_jobs = create_job_with_template_dict(
     '5 ter result postgres calls', 'base_calcul_b', postgres_server, nb_result_steps_trials)
 
 pdf_retrevial_job = create_job(
-    "PDF retrieval", 10*u.ko, 200*u.ko, 0*u.ko, 1*u.s, 2*u.gb, 1*u.core, mongodb_server)
+    "PDF retrieval", 10*u.kB, 200*u.kB, 0*u.kB, 1*u.s, 2*u.GB, 1*u.core, mongodb_server)
 
 pdf_submission_job = create_job(
-    "PDF submission", 200*u.ko, 10*u.ko, 200*u.ko, 1*u.s, 2*u.gb, 1*u.core, mongodb_server)
+    "PDF submission", 200*u.kB, 10*u.kB, 200*u.kB, 1*u.s, 2*u.GB, 1*u.core, mongodb_server)
 
 pg_update_step_job = create_job(
-    "Postgres Update", 10*u.ko, 260*u.Mo, 260*u.Mo, 3*u.s, 2*u.gb, 2*u.core, postgres_server)
+    "Postgres Update", 10*u.kB, 260*u.MB, 260*u.MB, 3*u.s, 2*u.GB, 2*u.core, postgres_server)
 
 pg_initial_download_job = create_job(
-    "Postgres Initial Download", 10*u.ko, 78*u.Go, 78*u.Go, 10*u.s, 1*u.gb, 1*u.core, postgres_server)
+    "Postgres Initial Download", 10*u.kB, 78*u.GB, 78*u.GB, 10*u.s, 1*u.GB, 1*u.core, postgres_server)
 
 tracking_metrics_job = create_job(
-    "Tracking metrics", 5*u.Mo, 0*u.ko, 0*u.Mo, 3*u.s, 1*u.gb, 1*u.core, prometheus_server
+    "Tracking metrics", 5*u.MB, 0*u.kB, 0*u.MB, 3*u.s, 1*u.GB, 1*u.core, prometheus_server
 )
 
 #UserJourney Step definiton
