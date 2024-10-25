@@ -1,4 +1,4 @@
-efootprint==2.1.6
+efootprint==7.0.0
 jupyter
 jupytext
 ipykernel

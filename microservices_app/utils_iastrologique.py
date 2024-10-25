@@ -1,12 +1,14 @@
 import os
 import sys
 
+from llm_modelings.bloom_efootprint import storage
+
 sys.path.append(os.path.join("..", ".."))
 
 from footprint_model.constants.sources import SourceValue, Sources
 from footprint_model.core.user_journey import UserJourney, UserJourneyStep
 from footprint_model.core.server import Server
-from footprint_model.core.storage import Storage
+from efootprint.core.hardware.storage import Storage
 from footprint_model.core.usage_pattern import UsagePattern
 from footprint_model.constants.countries import Countries
 from footprint_model.constants.units import u
@@ -26,19 +28,33 @@ def plot_from_system(emissions_dict__old, emissions_dict__new, title, filepath, 
 
 def create_server(name, carbon_footprint, power, idle_power, ram, cpu, cloud):
     return Server(
-        name, carbon_footprint_fabrication=SourceValue(carbon_footprint * u.kg, Sources.HYPOTHESIS),
-        power=SourceValue(power * u.W, Sources.HYPOTHESIS), lifespan=SourceValue(6 * u.year, Sources.HYPOTHESIS),
-        idle_power=SourceValue(idle_power * u.W, Sources.HYPOTHESIS), ram=SourceValue(ram * u.Go, Sources.USER_INPUT),
-        nb_of_cpus=cpu, power_usage_effectiveness=1.2, country=Countries.FRANCE, cloud=cloud)
+        name,
+        carbon_footprint_fabrication=SourceValue(carbon_footprint * u.kg, Sources.HYPOTHESIS),
+        power=SourceValue(power * u.W, Sources.HYPOTHESIS),
+        lifespan=SourceValue(6 * u.year, Sources.HYPOTHESIS),
+        idle_power=SourceValue(idle_power * u.W, Sources.HYPOTHESIS),
+        ram=SourceValue(ram * u.Go, Sources.USER_INPUT),
+        nb_of_cpus=cpu,
+        power_usage_effectiveness=1.2,
+        country=Countries.FRANCE,
+        cloud=cloud
+    )
 
-
-def create_storage(name, carbon_footprint, storage):
+#Util method to optimize the creation of straoge and avoid multiple call of init Storage in the main script
+def create_storage(name, carbon_footprint, storage_capacity):
     return Storage(
-        name, carbon_footprint_fabrication=SourceValue(carbon_footprint * u.kg, Sources.STORAGE_EMBODIED_CARBON_STUDY),
+        name=name,
+        carbon_footprint_fabrication=SourceValue(carbon_footprint * u.kg, Sources.STORAGE_EMBODIED_CARBON_STUDY),
         power=SourceValue(1.3 * u.W, Sources.STORAGE_EMBODIED_CARBON_STUDY),
-        lifespan=SourceValue(6 * u.years, Sources.HYPOTHESIS), idle_power=SourceValue(0 * u.W, Sources.HYPOTHESIS),
-        storage_capacity=SourceValue(storage * u.To, Sources.STORAGE_EMBODIED_CARBON_STUDY), power_usage_effectiveness=1.2,
-        country=Countries.FRANCE, data_replication_factor=3)
+        lifespan=SourceValue(6 * u.years, Sources.HYPOTHESIS),
+        idle_power=SourceValue(0 * u.W, Sources.HYPOTHESIS),
+        storage_capacity=storage_capacity,
+        power_usage_effectiveness=SourceValue(1.2 * u.dimensionless, Sources.HYPOTHESIS),
+        data_replication_factor=SourceValue(3* u.dimensionless, Sources.HYPOTHESIS),
+        data_storage_duration=SourceValue(1 * u.year, Sources.HYPOTHESIS),
+        base_storage_need=SourceValue(0 * u.Go, Sources.HYPOTHESIS),
+        average_carbon_intensity=SourceValue(0.1 * u.kgCO2eq / u.kWh, Sources.HYPOTHESIS),
+    )
 
 
 def create_usage_pattern(journey_name, steps, device_population, network, uj_freq, time_interval):

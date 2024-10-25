@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.7
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: Python (footprint-model)
+#     display_name: e-footprint-modelings
 #     language: python
-#     name: footprint-model
+#     name: e-footprint-modelings
 # ---
 
 # + active=""

@@ -1,5 +1,8 @@
 import os
 import sys
+
+from executing import Source
+
 sys.path.append(os.path.join("..", ".."))
 
 from footprint_model.constants.physical_elements import Hardware
@@ -21,35 +24,54 @@ USE_CASE_PATH = os.path.join(PROJECT_ROOT_PATH, "use_cases", "multiservice_app_c
 PLOTS_PATH = create_folder(os.path.join(USE_CASE_PATH, "plots"))
 
 
+#hypothesis definition
+
+#The default capacity of a SSD is set to 1TB
+#For a SSD of 1TB, the carbon footprint is set to 160 kgCO2eq
+hp_ssd_capacity = SourceValue(1 * u.To, Sources.STORAGE_EMBODIED_CARBON_STUDY)
+hp_ssd_carbon_footprint = SourceValue(160 * u.kg, Sources.STORAGE_EMBODIED_CARBON_STUDY)
+
+#Storage definition
+iastrologique_app_navigation_storage = create_storage(
+    "iastrologique app navigation storage", carbon_footprint=hp_ssd_carbon_footprint, storage=hp_ssd_capacity)
+eks_navigation_storage = create_storage(
+    "EKS navigation storage", carbon_footprint=hp_ssd_carbon_footprint, storage=hp_ssd_capacity)
+postgres_storage = create_storage(
+    "Postgres storage", carbon_footprint=hp_ssd_carbon_footprint, storage_capacity=hp_ssd_capacity)
+mongodb_storage = create_storage(
+    "MongoDB storage", carbon_footprint=hp_ssd_carbon_footprint, storage_capacity=hp_ssd_capacity)
+jenkins_storage = create_storage(
+    "AWS storage", carbon_footprint=hp_ssd_carbon_footprint, storage_capacity=hp_ssd_capacity)
+salesforce_crm_storage = create_storage(
+    "Salesforce CRM storage", carbon_footprint=hp_ssd_carbon_footprint, storage_capacity=hp_ssd_capacity)
+prometheus_grafana_storage = create_storage(
+    "Prometheus Grafana storage", carbon_footprint=hp_ssd_carbon_footprint, storage_capacity=hp_ssd_capacity)
+
+
+
 def iastrologique_yearly_modeling(nb_paid_users: int, nb_free_users: int, previous_year_system: System=None):
     # Web Application / MS
     iastrologique_app_server = create_server("iastrologique app server", carbon_footprint=1000, power=300, idle_power=50, ram=256,
                                          cpu=64, cloud="Autoscaling")
-    iastrologique_app_navigation_storage = create_storage("iastrologique app navigation storage", carbon_footprint=160, storage=1)
 
     # EKS microservice cluster
     eks_server = create_server("EKS server", carbon_footprint=1000, power=300, idle_power=50, ram=256,
                                cpu=64, cloud="Autoscaling")
-    eks_navigation_storage = create_storage("EKS navigation storage", carbon_footprint=160, storage=1)
 
     # AWS RDS
     postgres_server = create_server("postgres server", carbon_footprint=200, power=150, idle_power=20, ram=32, cpu=8,
                                     cloud="Autoscaling")
-    postgres_storage = create_storage("Postgres storage", carbon_footprint=160, storage=1)
 
     mongodb_server = create_server("MongoDB server", carbon_footprint=200, power=150, idle_power=20, ram=32, cpu=8,
                                    cloud="Autoscaling")
-    mongodb_storage = create_storage("MongoDB storage", carbon_footprint=160, storage=1)
 
     # Jenkins
     jenkins_server = create_server("Jenkins server", carbon_footprint=1000, power=300, idle_power=50, ram=256, cpu=64,
                                    cloud="Autoscaling")
-    jenkins_storage = create_storage("AWS storage", carbon_footprint=160, storage=1)
 
     # Salesforce CRM
     salesforce_crm = create_server("Salesforce CRM", carbon_footprint=1000, power=300, idle_power=50, ram=256, cpu=64,
                                    cloud="Serverless")
-    salesforce_crm_storage = create_storage("Salesforce CRM storage", carbon_footprint=160, storage=1)
 
     # Prometheus & Grafana
     prometheus_grafana_server = create_server("Prometheus server", carbon_footprint=1000, power=300, idle_power=50, ram=256,
