@@ -1,30 +1,21 @@
 import os
 import sys
 
-from executing import Source
-
-from llm_modelings.bloom_efootprint import storage
-from microservices_app.utils_iastrologique import create_job, create_job_with_template_dict, create_user_journey_step
+from efootprint.builders.hardware.devices_defaults import default_laptop
+from efootprint.constants.sources import Sources
+from microservices_app.utils_iastrologique import create_job, create_job_with_template_dict, create_user_journey_step, \
+    create_storage, create_server
 
 sys.path.append(os.path.join("..", ".."))
 
-from footprint_model.constants.physical_elements import Hardware
-from footprint_model.constants.sources import SourceValue, Sources
-from footprint_model.core.service import Service
-from footprint_model.core.device_population import DevicePopulation, Devices
-from footprint_model.core.network import Networks
-from footprint_model.core.system import System
-from footprint_model.constants.countries import Countries
-from footprint_model.constants.units import u
-from footprint_model.constants.files import PROJECT_ROOT_PATH, create_folder
 
-from use_cases.multiservice_app_carbon_case.utils_iastrologique import plot_from_system, create_server, create_storage, \
-    create_usage_pattern
+from efootprint.abstract_modeling_classes.source_objects import SourceValue, SourceHourlyValues
+from efootprint.core.hardware.network import Network as Networks
+from efootprint.core.system import System
+from efootprint.constants.countries import Countries
+from efootprint.constants.units import u
 
 import pandas as pd
-
-USE_CASE_PATH = os.path.join(PROJECT_ROOT_PATH, "use_cases", "multiservice_app_carbon_case")
-PLOTS_PATH = create_folder(os.path.join(USE_CASE_PATH, "plots"))
 
 #Storage definition
 iastrologique_app_navigation_storage = create_storage("iastrologique app navigation storage")
@@ -38,17 +29,17 @@ prometheus_storage = create_storage("Prometheus Grafana storage")
 #Server definition
 # Web Application / MS
 iastrologique_app_server = create_server(
-    "iastrologique app server", instance_type="lg", storage=iastrologique_app_navigation_storage)
-eks_server = create_server("EKS server", instance_type="lg", storage=eks_navigation_storage)
-jenkins_server = create_server("Jenkins server", instance_type="lg", storage=jenkins_storage)
-salesforce_crm = create_server("Salesforce CRM", instance_type="lg", storage=salesforce_crm_storage )
-prometheus_server = create_server("Prometheus server", instance_type="lg", storage=prometheus_storage)
-postgres_server = create_server("postgres server", instance_type="sm", storage=postgres_storage)
-mongodb_server = create_server("MongoDB server", instance_type="sm", storage=mongodb_storage)
+    "iastrologique app server", "lg", iastrologique_app_navigation_storage)
+eks_server = create_server("EKS server", "lg", eks_navigation_storage)
+jenkins_server = create_server("Jenkins server", "lg", jenkins_storage)
+salesforce_crm = create_server("Salesforce CRM", "lg", salesforce_crm_storage )
+prometheus_server = create_server("Prometheus server", "lg", prometheus_storage)
+postgres_server = create_server("postgres server", "sm", postgres_storage)
+mongodb_server = create_server("MongoDB server", "sm", mongodb_storage)
 
 
 #Job definition
-nb_result_steps_trials = SourceValue(5, Sources.HYPOTHESIS)
+nb_result_steps_trials = SourceValue( 5*u.dimensionless, Sources.HYPOTHESIS)
 
 jenkins_job = create_job_with_template_dict("Jenkins job", 'jenkins', jenkins_server)
 salesforce_crm_data_fetch_job = create_job_with_template_dict(
@@ -59,14 +50,7 @@ mongodb_data_fetch_job = create_job_with_template_dict(
     "MongoDB Data Fetch", 'default', mongodb_server)
 form_filling_job = create_job(
     "Form Filling",
-    50*u.ko,
-    data_download=2*u.Mo,
-    data_stored=0*u.ko,
-    request_duration=3*u.s,
-    ram_needed=2*u.gb,
-    cpu_needed=1*u.core,
-    server=iastrologique_app_server
-)
+    50*u.ko, 2*u.Mo, 0*u.ko, 3*u.s, 2*u.gb, 1*u.core, iastrologique_app_server)
 
 five_modeling_result_jobs = create_job_with_template_dict(
     '5 modeling result', 'base_calcul_a', iastrologique_app_server, nb_result_steps_trials)
@@ -134,7 +118,7 @@ def iastrologique_yearly_modeling(nb_paid_users: int, nb_free_users: int, previo
                                             base_ram_consumption=100*u.Mo, base_cpu_consumption=1*u.core)
 
     iastrologique_users_laptops = DevicePopulation(
-        "French IAstrologique users on laptop", nb_paid_users + nb_free_users, Countries.FRANCE, [Devices.LAPTOP])
+        "French IAstrologique users on laptop", nb_paid_users + nb_free_users, Countries.FRANCE, [default_laptop()])
 
     cron_server_call_hardware = Hardware(
         "virtual cron server", SourceValue(0*u.kg, Sources.HYPOTHESIS), SourceValue(0*u.W, Sources.HYPOTHESIS),

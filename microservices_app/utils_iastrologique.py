@@ -1,22 +1,22 @@
 import os
 import sys
 
-from efootprint.core.hardware.servers.autoscaling import Autoscaling
+from efootprint.builders.hardware.servers_defaults import default_autoscaling
+from efootprint.builders.hardware.storage_defaults import default_ssd
 from efootprint.core.usage.job import Job
 
-from llm_modelings.bloom_efootprint import storage
 
 sys.path.append(os.path.join("..", ".."))
-
-from footprint_model.constants.sources import SourceValue, Sources
-from footprint_model.core.user_journey import UserJourney, UserJourneyStep
-from efootprint.core.hardware.storage import Storage
+from efootprint.abstract_modeling_classes.explainable_objects import ExplainableQuantity
+from efootprint.abstract_modeling_classes.source_objects import SourceValue, Sources
 from efootprint.core.hardware.servers.autoscaling import Autoscaling
-from footprint_model.core.usage_pattern import UsagePattern
-from footprint_model.constants.countries import Countries
-from footprint_model.constants.units import u
-from footprint_model.utils.plot_emission_diffs import EmissionPlotter
-from footprint_model.constants.explainable_quantities import ExplainableQuantity
+from efootprint.core.usage.user_journey import UserJourney
+from efootprint.core.usage.user_journey_step import UserJourneyStep
+from efootprint.core.usage.usage_pattern import UsagePattern
+from efootprint.constants.units import u
+
+from efootprint.utils.plot_emission_diffs import EmissionPlotter
+
 from matplotlib import pyplot as plt
 
 #hypothesis definition
@@ -24,9 +24,6 @@ from matplotlib import pyplot as plt
 #STORAGE
 #---------------------------------------------------------------------------
 #The default capacity of a SSD is set to 1TB
-#For a SSD of 1TB, the carbon footprint is set to 160 kgCO2eq
-hp_ssd_capacity = SourceValue(1 * u.To, Sources.STORAGE_EMBODIED_CARBON_STUDY)
-hp_ssd_carbon_footprint = SourceValue(160 * u.kg, Sources.STORAGE_EMBODIED_CARBON_STUDY)
 #---------------------------------------------------------------------------
 #SERVER
 #---------------------------------------------------------------------------
@@ -34,18 +31,18 @@ hp_ssd_carbon_footprint = SourceValue(160 * u.kg, Sources.STORAGE_EMBODIED_CARBO
 #Use of an instance type variable to define easily the instance type
 hp_instance_configuration = {
     "lg": {
-        "carbon_footprint": SourceValue(1000 * u.kg, Sources.HYPOTHESIS),
+        "carbon_footprint_fabrication": SourceValue(1000 * u.kg, Sources.HYPOTHESIS),
         "power": SourceValue(300 * u.W, Sources.HYPOTHESIS),
         "idle_power": SourceValue(50 * u.W, Sources.HYPOTHESIS),
-        "ram": SourceValue(256 * u.Go, Sources.USER_INPUT),
-        "cpu": SourceValue(64 * u.core, Sources.USER_INPUT)
+        "ram": SourceValue(256 * u.GB, Sources.USER_DATA),
+        "cpu_cores": SourceValue(64 * u.core, Sources.USER_DATA)
     },
     "sm": {
-        "carbon_footprint": SourceValue(200 * u.kg, Sources.HYPOTHESIS),
+        "carbon_footprint_fabrication": SourceValue(200 * u.kg, Sources.HYPOTHESIS),
         "power": SourceValue(150 * u.W, Sources.HYPOTHESIS),
         "idle_power": SourceValue(20 * u.W, Sources.HYPOTHESIS),
-        "ram": SourceValue(32 * u.Go, Sources.USER_INPUT),
-        "cpu": SourceValue(8 * u.core, Sources.USER_INPUT)
+        "ram": SourceValue(32 * u.GB, Sources.USER_DATA),
+        "cpu_cores": SourceValue(8 * u.core, Sources.USER_DATA)
     }
 }
 #---------------------------------------------------------------------------
@@ -53,57 +50,50 @@ hp_instance_configuration = {
 #---------------------------------------------------------------------------
 hp_job_type={
     "default": {
-        "data_upload": SourceValue(10 * u.ko, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.ko, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(10 * u.kb, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.kb, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(1, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(1, Sources.HYPOTHESIS)
+        "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)
     },
     "base_calcul_a": {
-        "data_upload": SourceValue(10 * u.ko, Sources.HYPOTHESIS),
-        "data_download": SourceValue(2 * u.mo, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(10 * u.kb, Sources.HYPOTHESIS),
+        "data_download": SourceValue(2 * u.mb, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
         "request_duration": SourceValue(3 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(2, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(2, Sources.HYPOTHESIS)
+        "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
     },
     "base_calcul_b": {
-        "data_upload": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.mo, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
+        "data_download": SourceValue(500 * u.mb, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(2, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(2, Sources.HYPOTHESIS)
+        "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
     },
     "jenkins": {
-        "data_upload": SourceValue(100 * u.ko, Sources.HYPOTHESIS),
-        "data_download": SourceValue(100 * u.ko, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.ko, Sources.HYPOTHESIS),
+        "data_upload": SourceValue(100 * u.kb, Sources.HYPOTHESIS),
+        "data_download": SourceValue(100 * u.kb, Sources.HYPOTHESIS),
+        "data_stored": SourceValue(0 * u.kb, Sources.HYPOTHESIS),
         "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(1, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(1, Sources.HYPOTHESIS)
+        "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
+        "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)
     }
 }
 
 
 #Util method to optimize the creation of storage and avoid multiple call of init Storage in the main script
 def create_storage(name):
-    return Storage(
-        name=name,
-        carbon_footprint_fabrication=SourceValue(hp_ssd_carbon_footprint * u.kg, Sources.STORAGE_EMBODIED_CARBON_STUDY),
-        power=SourceValue(1.3 * u.W, Sources.STORAGE_EMBODIED_CARBON_STUDY),
-        lifespan=SourceValue(6 * u.years, Sources.HYPOTHESIS),
-        idle_power=SourceValue(0 * u.W, Sources.HYPOTHESIS),
-        storage_capacity=hp_ssd_capacity,
-        power_usage_effectiveness=SourceValue(1.2 * u.dimensionless, Sources.HYPOTHESIS),
-        data_replication_factor=SourceValue(3* u.dimensionless, Sources.HYPOTHESIS),
-        data_storage_duration=SourceValue(1 * u.year, Sources.HYPOTHESIS),
-        base_storage_need=SourceValue(0 * u.Go, Sources.HYPOTHESIS),
-        average_carbon_intensity=SourceValue(0.1 * u.kgCO2eq / u.kWh, Sources.HYPOTHESIS),
-    )
+    return default_ssd(name=name)
 
 def create_server(name, instance_type, serv_storage):
+    server_conf =hp_instance_configuration[instance_type]
+    return default_autoscaling(name, **server_conf, storage=serv_storage)
+
+
+def create_server_save(name, instance_type, serv_storage):
     return Autoscaling(
         name,
         carbon_footprint_fabrication=hp_instance_configuration[instance_type]["carbon_footprint"],
@@ -113,9 +103,9 @@ def create_server(name, instance_type, serv_storage):
         ram=hp_instance_configuration[instance_type]["ram"],
         cpu_cores=hp_instance_configuration[instance_type]["cpu"],
         power_usage_effectiveness=SourceValue(1.2 * u.dimensionless, Sources.HYPOTHESIS),
-        average_carbon_intensity=SourceValue(0.1 * u.kgCO2eq / u.kWh, Sources.HYPOTHESIS),
+        average_carbon_intensity=SourceValue(100 * u.g / u.kWh, Sources.HYPOTHESIS),
         server_utilization_rate=SourceValue(0.5 * u.dimensionless, Sources.HYPOTHESIS),
-        base_ram_consumption=SourceValue(0.5 * u.Go, Sources.HYPOTHESIS),
+        base_ram_consumption=SourceValue(0.5 * u.GB, Sources.HYPOTHESIS),
         base_cpu_consumption=SourceValue(0.5 * u.core, Sources.HYPOTHESIS),
         storage=serv_storage
     )
