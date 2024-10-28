@@ -4,6 +4,7 @@ import sys
 from efootprint.builders.hardware.devices_defaults import default_laptop
 from efootprint.builders.hardware.storage_defaults import default_ssd
 from efootprint.constants.sources import Sources
+from efootprint.core.usage.user_journey import UserJourney
 from efootprint.core.usage.user_journey_step import UserJourneyStep
 
 from microservices_app.utils_iastrologique import create_job, create_job_with_template_dict, create_server
@@ -110,6 +111,18 @@ pg_initial_download_step = UserJourneyStep(
     "Postgres Initial Download step", SourceValue(2*u.min, Sources.HYPOTHESIS), [pg_initial_download_job])
 tracking_metrics_step = UserJourneyStep(
     "Tracking metrics step", SourceValue(5*u.min, Sources.HYPOTHESIS), [tracking_metrics_job])
+
+
+#Definiton of UserJourney
+iastrologique_user_journey = UserJourney(
+    "IAstrologique user journey", [main_crm_step, result_step])
+jenkins_user_journey = UserJourney("Jenkins user journey", [jenkins_step])
+pdf_user_journey = UserJourney("PDF user journey", [pdf_retrieval_step, pdf_submission_step])
+pg_update_user_journey = UserJourney("Postgres Update user journey", [pg_update_step])
+pg_initial_download_user_journey = UserJourney("Postgres Initial Download user journey", [pg_initial_download_step])
+tracking_metrics_user_journey = UserJourney("Tracking metrics user journey", [tracking_metrics_step])
+
+
 
 
 
