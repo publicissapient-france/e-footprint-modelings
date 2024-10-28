@@ -83,11 +83,6 @@ hp_job_type={
     }
 }
 
-
-#Util method to optimize the creation of storage and avoid multiple call of init Storage in the main script
-def create_storage(name):
-    return default_ssd(name=name)
-
 def create_server(name, instance_type, serv_storage):
     server_conf =hp_instance_configuration[instance_type]
     return default_autoscaling(name, **server_conf, storage=serv_storage)
@@ -152,14 +147,6 @@ def create_job_with_template_dict(name, job_template, server, nb_result_step_tri
         ram_needed=hp_job_type[job_template]["server_ram_needed"],
         cpu_needed=hp_job_type[job_template]["cpu_needed"],
         server=server
-    )
-
-
-def create_user_journey_step(name, user_time_spent, job):
-    return UserJourneyStep(
-        name=name,
-        job=job,
-        user_time_spent=SourceValue(user_time_spent, Sources.HYPOTHESIS),
     )
 
 

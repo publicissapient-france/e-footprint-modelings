@@ -2,9 +2,11 @@ import os
 import sys
 
 from efootprint.builders.hardware.devices_defaults import default_laptop
+from efootprint.builders.hardware.storage_defaults import default_ssd
 from efootprint.constants.sources import Sources
-from microservices_app.utils_iastrologique import create_job, create_job_with_template_dict, create_user_journey_step, \
-    create_storage, create_server
+from efootprint.core.usage.user_journey_step import UserJourneyStep
+
+from microservices_app.utils_iastrologique import create_job, create_job_with_template_dict, create_server
 
 sys.path.append(os.path.join("..", ".."))
 
@@ -18,13 +20,13 @@ from efootprint.constants.units import u
 import pandas as pd
 
 #Storage definition
-iastrologique_app_navigation_storage = create_storage("iastrologique app navigation storage")
-eks_navigation_storage = create_storage("EKS navigation storage")
-postgres_storage = create_storage("Postgres storage")
-mongodb_storage = create_storage("MongoDB storage")
-jenkins_storage = create_storage("AWS storage")
-salesforce_crm_storage = create_storage("Salesforce CRM storage")
-prometheus_storage = create_storage("Prometheus Grafana storage")
+iastrologique_app_navigation_storage = default_ssd("iastrologique app navigation storage")
+eks_navigation_storage = default_ssd("EKS navigation storage")
+postgres_storage = default_ssd("Postgres storage")
+mongodb_storage = default_ssd("MongoDB storage")
+jenkins_storage = default_ssd("AWS storage")
+salesforce_crm_storage = default_ssd("Salesforce CRM storage")
+prometheus_storage = default_ssd("Prometheus Grafana storage")
 
 #Server definition
 # Web Application / MS
@@ -39,7 +41,7 @@ mongodb_server = create_server("MongoDB server", "sm", mongodb_storage)
 
 
 #Job definition
-nb_result_steps_trials = SourceValue( 5*u.dimensionless, Sources.HYPOTHESIS)
+nb_result_steps_trials = SourceValue(5*u.dimensionless, Sources.HYPOTHESIS)
 
 jenkins_job = create_job_with_template_dict("Jenkins job", 'jenkins', jenkins_server)
 salesforce_crm_data_fetch_job = create_job_with_template_dict(
@@ -76,10 +78,38 @@ tracking_metrics_job = create_job(
 )
 
 #UserJourney Step definiton
-main_step_back_step = create_user_journey_step(
-    "1 Salesforce CRM data fetch", 30*u.s,
-    [salesforce_crm_data_fetch_job,iastrologique_data_fetch_pg_job,mongodb_data_fetch_job]
+main_crm_step = UserJourneyStep(
+    "Salesforce CRM step", SourceValue(5*u.min, Sources.HYPOTHESIS),
+    [salesforce_crm_data_fetch_job,iastrologique_data_fetch_pg_job,mongodb_data_fetch_job,form_filling_job]
 )
+
+hp_request_duration_per_trial_main_service = SourceValue(3*u.min, Sources.HYPOTHESIS)
+hp_request_duration_per_trial_eks = SourceValue(1*u.s, Sources.HYPOTHESIS)
+hp_request_duration_per_trial_main_pg = SourceValue(1*u.s, Sources.HYPOTHESIS)
+
+hp_request_duration_step = hp_request_duration_per_trial_main_service * nb_result_steps_trials + \
+                            hp_request_duration_per_trial_eks * nb_result_steps_trials + \
+                            hp_request_duration_per_trial_main_pg * nb_result_steps_trials
+
+hp_request_duration_step = hp_request_duration_step.set_label("Request duration step")
+
+result_step = UserJourneyStep(
+    "Modeling result step", hp_request_duration_step,
+    [five_modeling_result_jobs, five_bis_result_api_calls_jobs, five_ter_result_postgres_calls_jobs]
+)
+
+jenkins_step = UserJourneyStep(
+    "Jenkins step", SourceValue(1*u.hour, Sources.HYPOTHESIS), [jenkins_job])
+pdf_retrieval_step = UserJourneyStep(
+    "PDF retrieval step", SourceValue(2*u.min, Sources.HYPOTHESIS), [pdf_retrevial_job])
+pdf_submission_step = UserJourneyStep(
+    "PDF submission step", SourceValue(2*u.min, Sources.HYPOTHESIS), [pdf_submission_job])
+pg_update_step = UserJourneyStep(
+    "Postgres Update step", SourceValue(1*u.min, Sources.HYPOTHESIS), [pg_update_step_job])
+pg_initial_download_step = UserJourneyStep(
+    "Postgres Initial Download step", SourceValue(2*u.min, Sources.HYPOTHESIS), [pg_initial_download_job])
+tracking_metrics_step = UserJourneyStep(
+    "Tracking metrics step", SourceValue(5*u.min, Sources.HYPOTHESIS), [tracking_metrics_job])
 
 
 
