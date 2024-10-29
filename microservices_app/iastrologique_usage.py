@@ -2,7 +2,6 @@ import datetime
 import os
 
 import pandas as pd
-import pint
 from efootprint.builders.hardware.storage_defaults import default_ssd
 from efootprint.constants.sources import Sources
 from efootprint.core.usage.usage_pattern import UsagePattern
@@ -135,7 +134,7 @@ def iastrologique_modeling():
         [default_laptop_system],
         network,
         Countries.FRANCE(),
-        create_hourly_usage_from_frequency(1, 7*u.year, 'daily', None, [9], start_date)
+        create_hourly_usage_from_frequency(1, 7*u.year, 'weekly', [0,1,2,3,4], [9], start_date)
     )
 
     current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -143,7 +142,7 @@ def iastrologique_modeling():
     yearly_usage_df = pd.read_csv(csv_file_path)
     yearly_usage_df.set_index("year", inplace=True)
 
-    yearly_usage_df["nb_main_uj_occurences"] = 15 * yearly_usage_df["nb_paid_users"] + 2 * yearly_usage_df[
+    yearly_usage_df["nb_main_uj_occurences"] = yearly_usage_df["nb_paid_users"] + yearly_usage_df[
         "nb_free_users"]
 
     iastrologique_pdf_up = UsagePattern(
@@ -156,6 +155,9 @@ def iastrologique_modeling():
             yearly_usage_df["nb_main_uj_occurences"], frequency="daily", launch_hours=list(range(10, 24)))
     )
 
+    yearly_usage_df["nb_main_uj_occurences"] = 15 * yearly_usage_df["nb_paid_users"] + 2 * yearly_usage_df[
+        "nb_free_users"]
+
     iastrologique_up = UsagePattern(
         "IAstrologique usage in France on laptop",
         iastrologique_user_journey,
@@ -163,7 +165,7 @@ def iastrologique_modeling():
         network,
         Countries.FRANCE(),
         create_user_volume_for_usage_pattern(
-                'daily', False, list(range(10, 24)), use_coefficient=True)
+                 yearly_usage_df["nb_main_uj_occurences"], frequency="daily", launch_hours=list(range(10, 24)))
     )
 
     initialize_postgres_db_up = UsagePattern(
@@ -172,9 +174,7 @@ def iastrologique_modeling():
         [default_laptop_system],
         network,
         Countries.FRANCE(),
-        create_hourly_usage_from_frequency(
-            1, start_date, pint.Unit(u.dimensionless), 'yearly', 7*u.year, False, [1], [0]
-        )
+        create_hourly_usage_from_frequency(1, 7 * u.year, 'yearly', [1], [0], start_date)
     )
 
     update_database_up = UsagePattern(
@@ -183,9 +183,7 @@ def iastrologique_modeling():
         [default_laptop_system],
         network,
         Countries.FRANCE(),
-        create_hourly_usage_from_frequency(
-            1, start_date, pint.Unit(u.dimensionless), 'monthly', 7*u.year, False, [1], [0]
-        )
+        create_hourly_usage_from_frequency(1, 7 * u.year, 'monthly', [1], [0], start_date)
     )
 
     grafana_visualizing_metrics_up = UsagePattern(
@@ -194,9 +192,7 @@ def iastrologique_modeling():
         [default_laptop_system],
         network,
         Countries.FRANCE(),
-        create_hourly_usage_from_frequency(
-            1, start_date, pint.Unit(u.dimensionless), 'daily', 7*u.year, False, [10]
-        )
+        create_hourly_usage_from_frequency(1, 7 * u.year, 'daily', None, [10], start_date)
     )
 
     system_iastrologique = System(
@@ -209,6 +205,6 @@ def iastrologique_modeling():
 
 if __name__ == "__main__":
     system = iastrologique_modeling()
-    iastrologique_up = system.usage_patterns[0]
+    iastrologique_up_test = system.usage_patterns[0]
 
-    print(iastrologique_up)
+    print(iastrologique_up_test)
