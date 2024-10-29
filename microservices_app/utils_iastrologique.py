@@ -1,142 +1,97 @@
-import os
-import sys
-import pandas as pd
-import pint
 from datetime import datetime, timedelta
 
-from dateutil.relativedelta import relativedelta
+import numpy as np
+import pandas as pd
+import pint
+from matplotlib import pyplot as plt
+
 from efootprint.builders.hardware.servers_defaults import default_autoscaling
 from efootprint.core.usage.job import Job
-
-sys.path.append(os.path.join("..", ".."))
-from efootprint.abstract_modeling_classes.explainable_objects import ExplainableQuantity
+from efootprint.abstract_modeling_classes.explainable_objects import ExplainableQuantity, EmptyExplainableObject
 from efootprint.abstract_modeling_classes.source_objects import SourceValue, Sources, SourceHourlyValues
 from efootprint.core.hardware.servers.autoscaling import Autoscaling
 from efootprint.constants.units import u
-
 from efootprint.utils.plot_emission_diffs import EmissionPlotter
 
-from matplotlib import pyplot as plt
 
-
-
-# Create sub_hourly usage from a list of hours and a volume to distribute among them with a specific frequency
 def create_hourly_usage_from_frequency(
-        input_volume: float, start_date: datetime, pint_unit: pint.Unit, type_frequency: str,
-        duration, only_work_days: bool, time_list:list = None, launch_hour_list: list = None):
+        input_volume: float, duration: pint.Quantity, frequency: str, active_days: list = None,
+        launch_hours: list = None, start_date: datetime = datetime.strptime("2025-01-01", "%Y-%m-%d"),
+        pint_unit: pint.Unit = u.dimensionless):
+    if frequency not in ['daily', 'weekly', 'monthly', 'yearly']:
+        raise ValueError(f"frequency must be one of 'daily', 'weekly', 'monthly', or 'yearly', got {frequency}.")
 
-    if start_date is None:
-        start_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
-    if pint_unit is None:
-        pint_unit = pint.Unit(u.dimensionless)
-    if type_frequency not in ['daily', 'weekly', 'monthly', 'yearly']:
-        raise ValueError("type_frequency must be one of 'daily', 'weekly', 'monthly', or 'yearly'.")
+    if frequency == 'daily' and active_days is not None:
+        raise ValueError(f"active_days must be None for daily frequency, got {active_days}.")
 
-    if isinstance(duration, pint.Quantity):
-        if duration.units == u.day:
-            end_date = start_date + timedelta(days=duration.magnitude - 1)
-        elif duration.units == u.week:
-            end_date = start_date + timedelta(weeks=duration.magnitude) - timedelta(days=1)
-        elif duration.units == u.month:
-            end_date = start_date + relativedelta(months=duration.magnitude) - timedelta(days=1)
-        elif duration.units == u.year:
-            end_date = start_date + relativedelta(years=duration.magnitude) - timedelta(days=1)
+    end_date = start_date + timedelta(days=duration.to(u.day).magnitude)
+
+    if active_days is None:
+        if frequency == "weekly":
+            active_days = [0]  # default to midnight or Monday
         else:
-            raise ValueError("Unsupported unit for duration. Use days, weeks, months, or years.")
-        end_date = end_date.replace(hour=23)
-    else:
-        raise TypeError("duration must be a pint.Quantity with time units like days, weeks, months, or years (e.g., 2*u.month).")
+            active_days = [1]  # default to first day of month or first day of year
 
-    if time_list is None:
-        if type_frequency == 'daily':
-            time_list = [0]  # default to midnight
-        elif type_frequency == 'weekly':
-            time_list = [1]  # default to Monday
-        elif type_frequency == 'monthly':
-            time_list = [1]  # default to the first day of the month
-        elif type_frequency == 'yearly':
-            time_list = [1]  # default to the first day of the year
-        if launch_hour_list is None:
-            launch_hour_list = [0]  # default to midnight
+    if launch_hours is None:
+        launch_hours = [0]  # default to midnight
 
     period_index = pd.period_range(start=start_date, end=end_date, freq='h')
-    df = pd.DataFrame(0, index=period_index, columns=['value'], dtype=f"pint[{str(pint_unit)}]")
+    values = np.full(shape=len(period_index), fill_value=0)
 
-    for current_hour in df.index:
-        hour_of_day = current_hour.hour
-        day_of_week = current_hour.to_timestamp().weekday()
-        day_of_month = current_hour.day
-        day_of_year = current_hour.to_timestamp().timetuple().tm_yday  # Day of the year, 1 to 365/366
-        if type_frequency == 'daily':
-            if hour_of_day in time_list and (not only_work_days or day_of_week < 5):
-                df.at[current_hour, 'value'] = input_volume
-        elif type_frequency == 'weekly':
-            if day_of_week in time_list and hour_of_day in launch_hour_list:
-                df.at[current_hour, 'value'] = input_volume
-        elif type_frequency == 'monthly':
-            if day_of_month in time_list and hour_of_day in launch_hour_list:
-                df.at[current_hour, 'value'] = input_volume
-        elif type_frequency == 'yearly':
-            if day_of_year in time_list and hour_of_day in launch_hour_list:
-                df.at[current_hour, 'value'] = input_volume
+    for i, period in enumerate(period_index):
+        hour_of_day = period.hour  # Hour of the day, 0 to 23
+        day_of_week = period.day_of_week  # Day of the week, 0 to 6
+        day_of_month = period.day  # Day of the month, 1 to 31
+        day_of_year = period.day_of_year  # Day of the year, 1 to 365/366
+        if frequency == 'daily':
+            if hour_of_day in launch_hours:
+                values[i] = input_volume
+        elif frequency == 'weekly':
+            if day_of_week in active_days and hour_of_day in launch_hours:
+                values[i] = input_volume
+        elif frequency == 'monthly':
+            if day_of_month in active_days and hour_of_day in launch_hours:
+                values[i] = input_volume
+        elif frequency == 'yearly':
+            if day_of_year in active_days and hour_of_day in launch_hours:
+                values[i] = input_volume
+
+    df = pd.DataFrame(values, index=period_index, columns=['value'], dtype=f"pint[{str(pint_unit)}]")
 
     return SourceHourlyValues(df, label="Hourly usage")
 
-def  create_user_volume_for_usage_pattern(type_frequency: str, only_work_days: bool, time_list:list = None,
-                                          launch_hour_list: list = None, use_coefficient: bool = False):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    csv_file_path = os.path.join(current_directory, 'yearly_nb_of_users.csv')
-    yearly_usage_df = pd.read_csv(csv_file_path)
 
-    list_exp_hourly_quantity = []
+def create_user_volume_for_usage_pattern(
+        yearly_usage_series: pd.Series, frequency: str, active_days: list = None, launch_hours: list = None):
+    yearly_visits_as_hourly_quantities = []
 
-    for i in range(len(yearly_usage_df)):
-        year = yearly_usage_df["year"].iloc[i]
-        nb_paid_users_that_year = yearly_usage_df["nb_paid_users"].iloc[i]
-        nb_free_users_that_year = yearly_usage_df["nb_free_users"].iloc[i]
+    for i in range(len(yearly_usage_series)):
+        year = yearly_usage_series.index[i]
+        nb_visits_that_year = yearly_usage_series.iloc[i]
+
+        if frequency == "daily":
+            nb_active_days_per_year = 365
+        elif frequency == "weekly":
+            nb_active_days_per_year = 52 * len(active_days)
+        elif frequency == "monthly":
+            nb_active_days_per_year = 12 * len(active_days)
+        elif frequency == "yearly":
+            nb_active_days_per_year = len(active_days)
+
+        nb_hourly_visits = nb_visits_that_year / (nb_active_days_per_year * len(launch_hours))
 
         start_date = datetime(year, 1, 1)
-        if year % 4 == 0:
-            duration = 366 * u.day
-        else:
-            duration = 365 * u.day
-
-        if only_work_days:
-            working_days =(sum(1 for day in range(duration.magnitude)
-                               if (datetime(year, 1, 1)
-                                   + timedelta(days=day)).weekday() < 5)) * u.day
-        else:
-            working_days = 0 * u.day
-
-        duration_split = duration - working_days
-
-        if use_coefficient:
-            coef_nb_paid_users = yearly_usage_df["coef_nb_paid_users"].iloc[i]
-            coef_nb_free_users = yearly_usage_df["coef_nb_free_users"].iloc[i]
-            nb_hourly_users = (nb_paid_users_that_year * coef_nb_paid_users + nb_free_users_that_year * coef_nb_free_users)
-        else:
-            nb_hourly_users = nb_paid_users_that_year + nb_free_users_that_year
-
-        if type_frequency == 'daily':
-            nb_hourly_users = round((nb_hourly_users/duration_split.magnitude)/ len(time_list), 0)
-        elif type_frequency == 'weekly' or type_frequency == 'monthly':
-            nb_hourly_users = round((nb_hourly_users/duration_split.magnitude)/ len(time_list) / len(launch_hour_list), 0)
-
+        duration = (datetime(year + 1, 1, 1) - start_date).days * u.day - 1 * u.hour
         yearly_usage = create_hourly_usage_from_frequency(
-            nb_hourly_users, start_date, pint.Unit(u.dimensionless), "daily", duration,
-           only_work_days, time_list, launch_hour_list)
+            nb_hourly_visits, duration, frequency, active_days, launch_hours, start_date)
 
-        list_exp_hourly_quantity.append(yearly_usage)
+        yearly_visits_as_hourly_quantities.append(yearly_usage)
 
-    return_object = None
+    visits_over_all_years = sum(yearly_visits_as_hourly_quantities, start=EmptyExplainableObject())
+    visits_over_all_years.left_parent = None
+    visits_over_all_years.right_parent = None
 
-    for i in range(len(list_exp_hourly_quantity)):
-        if i == 0:
-            return_object = list_exp_hourly_quantity[i]
-        else:
-            return_object += list_exp_hourly_quantity[i]
-
-    return return_object
+    return visits_over_all_years
 
 
 #hypothesis definition
