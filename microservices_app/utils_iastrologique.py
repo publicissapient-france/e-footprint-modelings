@@ -9,7 +9,6 @@ from efootprint.builders.hardware.servers_defaults import default_autoscaling
 from efootprint.core.usage.job import Job
 from efootprint.abstract_modeling_classes.explainable_objects import ExplainableQuantity, EmptyExplainableObject
 from efootprint.abstract_modeling_classes.source_objects import SourceValue, Sources, SourceHourlyValues
-from efootprint.core.hardware.servers.autoscaling import Autoscaling
 from efootprint.constants.units import u
 from efootprint.utils.plot_emission_diffs import EmissionPlotter
 
@@ -18,6 +17,24 @@ def create_hourly_usage_from_frequency(
         input_volume: float, duration: pint.Quantity, frequency: str, active_days: list = None,
         launch_hours: list = None, start_date: datetime = datetime.strptime("2025-01-01", "%Y-%m-%d"),
         pint_unit: pint.Unit = u.dimensionless):
+    """
+    Create hourly usage from a volume to distribute among hours with a specific frequency.
+
+    Parameters
+    ----------
+    input_volume : float The volume to distribute among hours.
+    duration : pint.Quantity The duration of the usage.
+    frequency : str The frequency of the usage. Must be one of 'daily', 'weekly', 'monthly', or 'yearly'.
+    active_days : list, optional The days of the week or month to distribute the volume. Default is None.
+    launch_hours : list, optional The hours of the day to distribute the volume. Default is None.
+    start_date : datetime, optional The start date of the usage. Default is datetime.strptime("2025-01-01", "%Y-%m-%d").
+    pint_unit : pint.Unit, optional The unit of the volume. Default is u.dimensionless.
+
+    Returns
+    -------
+    SourceHourlyValues The hourly usage.
+
+    """
     if frequency not in ['daily', 'weekly', 'monthly', 'yearly']:
         raise ValueError(f"frequency must be one of 'daily', 'weekly', 'monthly', or 'yearly', got {frequency}.")
 
@@ -58,11 +75,27 @@ def create_hourly_usage_from_frequency(
 
     df = pd.DataFrame(values, index=period_index, columns=['value'], dtype=f"pint[{str(pint_unit)}]")
 
-    return SourceHourlyValues(df, label="Hourly usage")
+    return SourceHourlyValues(df, label="Hourly usage from frequency")
 
 
 def create_user_volume_for_usage_pattern(
         yearly_usage_series: pd.Series, frequency: str, active_days: list = None, launch_hours: list = None):
+
+    """
+    Create hourly usage from a pandas Series of yearly usage to distribute among hours with a specific frequency.
+
+    Parameters
+    ----------
+    yearly_usage_series : pd.Series The yearly usage to distribute among hours.
+    frequency : str The frequency of the usage. Must be one of 'daily', 'weekly', 'monthly', or 'yearly'.
+    active_days : list, optional The days of the week or month to distribute the volume. Default is None.
+    launch_hours : list, optional The hours of the day to distribute the volume. Default is None.
+
+    Returns
+    -------
+    SourceHourlyValues The hourly usage.
+    """
+
     yearly_visits_as_hourly_quantities = []
 
     for i in range(len(yearly_usage_series)):
@@ -90,14 +123,12 @@ def create_user_volume_for_usage_pattern(
     visits_over_all_years = sum(yearly_visits_as_hourly_quantities, start=EmptyExplainableObject())
     visits_over_all_years.left_parent = None
     visits_over_all_years.right_parent = None
+    visits_over_all_years.label = "User volume for usage pattern"
 
     return visits_over_all_years
 
 
 #hypothesis definition
-#---------------------------------------------------------------------------
-#STORAGE
-#---------------------------------------------------------------------------
 #The default capacity of a SSD is set to 1TB
 #---------------------------------------------------------------------------
 #SERVER
@@ -123,91 +154,16 @@ hp_instance_configuration = {
 #---------------------------------------------------------------------------
 #JOB
 #---------------------------------------------------------------------------
-hp_job_type={
-    "default": {
-        "data_upload": SourceValue(10 * u.kB, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.kB, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
-        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)
-    },
-    "base_calcul_a": {
-        "data_upload": SourceValue(10 * u.kB, Sources.HYPOTHESIS),
-        "data_download": SourceValue(2 * u.MB, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
-        "request_duration": SourceValue(3 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
-    },
-    "base_calcul_b": {
-        "data_upload": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
-        "data_download": SourceValue(500 * u.MB, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
-        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(2*u.GB, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(2*u.core, Sources.HYPOTHESIS)
-    },
-    "jenkins": {
-        "data_upload": SourceValue(100 * u.kB, Sources.HYPOTHESIS),
-        "data_download": SourceValue(100 * u.kB, Sources.HYPOTHESIS),
-        "data_stored": SourceValue(0 * u.kB, Sources.HYPOTHESIS),
-        "request_duration": SourceValue(1 * u.s, Sources.HYPOTHESIS),
-        "server_ram_needed": SourceValue(1*u.GB, Sources.HYPOTHESIS),
-        "cpu_needed": SourceValue(1*u.core, Sources.HYPOTHESIS)
-    }
-}
-
 def create_server(name, instance_type, serv_storage):
     server_conf =hp_instance_configuration[instance_type]
     return default_autoscaling(name, **server_conf, storage=serv_storage)
 
-
-def create_server_save(name, instance_type, serv_storage):
-    return Autoscaling(
-        name,
-        carbon_footprint_fabrication=hp_instance_configuration[instance_type]["carbon_footprint"],
-        power=hp_instance_configuration[instance_type]["power"],
-        lifespan=SourceValue(6 * u.year, Sources.HYPOTHESIS),
-        idle_power=hp_instance_configuration[instance_type]["idle_power"],
-        ram=hp_instance_configuration[instance_type]["ram"],
-        cpu_cores=hp_instance_configuration[instance_type]["cpu"],
-        power_usage_effectiveness=SourceValue(1.2 * u.dimensionless, Sources.HYPOTHESIS),
-        average_carbon_intensity=SourceValue(100 * u.g / u.kWh, Sources.HYPOTHESIS),
-        server_utilization_rate=SourceValue(0.5 * u.dimensionless, Sources.HYPOTHESIS),
-        base_ram_consumption=SourceValue(0.5 * u.GB, Sources.HYPOTHESIS),
-        base_cpu_consumption=SourceValue(0.5 * u.core, Sources.HYPOTHESIS),
-        storage=serv_storage
-    )
-
 def create_job(name, data_upload, data_download, data_stored, request_duration, ram_needed, cpu_needed, server,
         nb_result_step_trial=None):
-    if nb_result_step_trial is not None:
-        data_upload = data_upload * nb_result_step_trial
-        data_download = data_download * nb_result_step_trial
-        data_stored = data_stored * nb_result_step_trial
-        request_duration = request_duration * nb_result_step_trial
-    else :
-        data_upload = SourceValue(data_upload, Sources.HYPOTHESIS)
-        data_download = SourceValue(data_download, Sources.HYPOTHESIS)
-        data_stored = SourceValue(data_stored, Sources.HYPOTHESIS)
-        request_duration = SourceValue(request_duration, Sources.HYPOTHESIS)
-    return Job(
-        name=name,
-        data_upload=data_upload,
-        data_download=data_download,
-        data_stored=data_stored,
-        request_duration=request_duration,
-        ram_needed=SourceValue(ram_needed, Sources.HYPOTHESIS),
-        cpu_needed=SourceValue(cpu_needed, Sources.HYPOTHESIS),
-        server=server
-    )
-
-def create_job_with_template_dict(name, job_template, server, nb_result_step_trial=None):
-    data_upload = hp_job_type[job_template]["data_upload"]
-    data_download = hp_job_type[job_template]["data_download"]
-    data_stored = hp_job_type[job_template]["data_stored"]
-    request_duration = hp_job_type[job_template]["request_duration"]
+    data_upload = SourceValue(data_upload, Sources.HYPOTHESIS, label=f"Data upload for {name} job")
+    data_download = SourceValue(data_download, Sources.HYPOTHESIS, label=f"Data download for {name} job")
+    data_stored = SourceValue(data_stored, Sources.HYPOTHESIS, label=f"Data stored for {name} job")
+    request_duration = SourceValue(request_duration, Sources.HYPOTHESIS, label=f"Request duration for {name} job")
     if nb_result_step_trial is not None:
         data_upload = data_upload * nb_result_step_trial
         data_download = data_download * nb_result_step_trial
@@ -219,11 +175,10 @@ def create_job_with_template_dict(name, job_template, server, nb_result_step_tri
         data_download=data_download,
         data_stored=data_stored,
         request_duration=request_duration,
-        ram_needed=hp_job_type[job_template]["server_ram_needed"],
-        cpu_needed=hp_job_type[job_template]["cpu_needed"],
+        ram_needed=SourceValue(ram_needed, Sources.HYPOTHESIS, label=f"RAM needed for {name} job"),
+        cpu_needed=SourceValue(cpu_needed, Sources.HYPOTHESIS, label=f"CPU needed for {name} job"),
         server=server
     )
-
 
 
 def plot_from_system(emissions_dict__old, emissions_dict__new, title, filepath, figsize):

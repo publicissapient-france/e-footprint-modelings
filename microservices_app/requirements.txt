@@ -1,0 +1,9 @@
+efootprint==7.0.0
+jupyter
+jupytext
+ipykernel
+pandas~=2.2.0
+matplotlib~=3.8.0
+ipython~=8.28.0
+Pint~=0.23
+python-dateutil~=2.9.0.post0

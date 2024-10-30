@@ -1,20 +1,39 @@
 # e-footprint modelings
 
-This repository is a collection of e-footprint use cases. e-footprint is a digital service environmental footprint model, and has been open sourced by Publicis Sapient in October 2023. Here is the link to [e-footprint’s source code](https://github.com/publicissapient-france/e-footprint), to [e-footprint’s documentation](https://publicissapient-france.github.io/e-footprint), and to [e-footprint’s current didactic interface](https://publicis-sapient-e-footprint-model.streamlit.app/) (which will be soon deprecated).
+This repository is a collection of e-footprint use cases.
 
-## Modelings
+All these modelings are powered by the e-footprint library, an open-source project supported by Publicis Sapient and Boavizta.
+e-footprint is a Python library that allows to calculate the carbon footprint of different digital services.
 
-### Modeling of the impact of large language models
-See [llm_modelings](llm_modelings).
+fore more details :
+- e-footprint github link : https://github.com/Boavizta/e-footprint
+- Boavizta link : https://boavizta.org
 
-### Modeling of the impact of a mobile payment service: Paylib
-See [paylib_efootprint](paylib_efootprint).
+## Requirements
+- Python 3.x
+- pip
 
-# Launch Jupyter Notebook with jupytext
-Jupytext automatically translates notebooks into .py files for easier versioning.
+### Setup
+1. Clone the repository : https://github.com/publicissapient-france/e-footprint-modelings
 
+2. Go to sub repository regarding the use case you want to test.
+- Modeling of the impact of large language models : See llm_modelings 
+- Modeling of the impact of a mobile payment service (Paylib) : See paylib_efootprint.
+
+
+for example :
 ```bash
-# if not done, install jupyter kernel
-ipython kernel install --user --name=e-footprint-modelings
-bash jupyter.sh
+cd llm_modelings
 ```
+
+3. Create a virtual environment if needed or activate the existing one:
+```bash
+python -m venv YourNewEnv
+source YourNewEnv/bin/activate
+```
+### OR
+```bash
+source YourEnv/bin/activate
+```
+
+Additionnal information can be found in the README.md of each sub repository.
