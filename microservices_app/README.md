@@ -14,13 +14,16 @@ fore more details :
 - pip
 
 ### Setup
-1. Clone the repository :
-
-
-1bis. Create a virtual environment if needed:
+1. Virtual environment :
+```bash
+Create a virtual environment if needed or activate the existing one:
 ```bash
 python -m venv YourNewEnv
 source YourNewEnv/bin/activate
+```
+### OR
+```bash
+source YourEnv/bin/activate
 ```
 
 2. Install dependencies :
@@ -28,21 +31,9 @@ source YourNewEnv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Usage
-1. Modify the parameters in `main.py` according to your needs.
-2. Run the main script to test the modelisation :
-```bash
-python iastrologique_usage.py
-```
-
-3. To visualize the results, open the Jupyter notebook modelisation.ipynb :
-```bash
-jupyter notebook
-```
-
-
 ## Project structure
 - `iastrologique_usage.py` : Contains the main logic to define user journeys and usage models.
-- `utils_iastrologique.py` : Contains utility functions to build easily e-footprint objets.
+- `README.md` : This file, describing the project and how to use it.
+- `utils_iastrologique.py` : Contains methods to facilitate the build of some e-footprint objects
 - `requirements.txt` : Python dependencies file.
 - `iastrologique_modelisation.ipynb` : Jupyter notebook to visualize the results.

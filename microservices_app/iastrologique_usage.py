@@ -45,7 +45,7 @@ logger.info("Job definition")
 nb_result_steps_trials = SourceValue(5*u.dimensionless, Sources.HYPOTHESIS, label="Number of result steps trials")
 
 jenkins_job = create_job(
-    "Jenkins job", 10*u.kB, 500*u.kB, 10*u.kB, 1*u.s, 1*u.GB, 1*u.core, jenkins_server
+    "Jenkins job", 100*u.kB, 500*u.kB, 100*u.kB, 1*u.s, 1*u.GB, 1*u.core, jenkins_server
 )
 salesforce_crm_data_fetch_job = create_job(
     "Salesforce CRM Data Fetch", 10*u.kB, 500*u.kB, 10*u.kB, 1*u.s, 1*u.GB, 1*u.core, salesforce_crm

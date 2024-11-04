@@ -36,4 +36,7 @@ source YourNewEnv/bin/activate
 source YourEnv/bin/activate
 ```
 
-Additionnal information can be found in the README.md of each sub repository.
+4. Install dependencies :
+```bash
+pip install -r requirements.txt
+```
