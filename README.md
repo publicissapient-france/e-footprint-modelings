@@ -5,7 +5,7 @@ This repository is a collection of e-footprint use cases. e-footprint is a digit
 ## Modelings
 
 ### Modeling of the impact of large language models
-See [llm_modelings](llm_modelings).
+See [llm_modelings](llm_modelings) and [ai_use_case](ai_use_case).
 
 ### Modeling of the impact of a mobile payment service: Paylib
 See [paylib_efootprint](paylib_efootprint).
