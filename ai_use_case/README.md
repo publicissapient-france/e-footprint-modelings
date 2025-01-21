@@ -8,20 +8,21 @@ More details:
 - Boavizta link: https://boavizta.org
 
 # Prerequisites
-- Python 3.x
+- Python 3.10, 3.11 or 3.12
 - pip
 
 # Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/morzu117/system-sg-modelling.git
-cd system-sg-modelling
+git clone https://github.com/publicissapient-france/e-footprint-modelings.git
+cd e-footprint-modelings/ai_use_case
 ```
 
 (Optional) Create a virtual environment:
 ```bash
 python -m venv venv
 source venv/bin/activate
+pip install --upgrade pip
 ```
 
 2. Install dependencies:
