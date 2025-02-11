@@ -15,12 +15,17 @@ cd llm_modelings
 
 ## Install the requirements
 
+### Required Python version
+
+e-footprint requires Python 3.12.
+
+### Install the requirements
 Each package has its own requirements file. You can install the requirements by running the following commands.
 Here is an example using conda as an env manager (but you could use other env manager as pyvenv or
 virtualenvwrapper):
 
 ```bash
-conda create -n e-footprint python=3.11.2
+conda create -n e-footprint python=3.12
 conda activate e-footprint
 pip install -r requirements.txt
 pip install -r requirements-dev.txt

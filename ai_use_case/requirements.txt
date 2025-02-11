@@ -1,2 +1,1 @@
-efootprint==8.0.1
-ecologits==0.5
+efootprint==9.1.4
